@@ -1,0 +1,48 @@
+🤖 Multi-Agent AI Communication Framework for Request Handling
+A simple, beginner-friendly Agentic AI project that demonstrates four communication frameworks between AI agents:
+
+Centralized – a Coordinator controls everything
+Decentralized – agents pass work along a fixed chain, no coordinator
+Parallel – agents run concurrently using asyncio
+Peer-to-Peer – agents talk directly to each other, with one optional correction cycle
+
+How this project works
+Message class — a small container holding sender, receiver, and content.
+MessageBus — every time one agent (or the Coordinator/User/Task Router) sends something to another, it is recorded here. The full log is shown in the UI.
+Agent class — a shared structure for all four agents. Each agent has a name, a system prompt (its role), and a run() method that calls the LLM.
+Four agents — Research, Analysis, Critic, and Response — each with a distinct system prompt, as specified in the project brief.
+How each communication framework works
+Centralized — a Coordinator sits in the middle of every exchange. It hands the task to Research, then Analysis, then Critic, then Response, and relays results back and forth. Nothing goes directly agent-to-agent.
+Decentralized — there's no Coordinator. Each agent finishes its own work and looks up a small predefined routing table (Research → Analysis → Critic → Response) to decide who to hand off to next.
+Parallel — Research, Analysis, and Critic all run at the same time using asyncio.gather, each working directly from the original user request (for simplicity). This runs inside its own isolated background thread with a fresh event loop, so it never conflicts with Colab's or Gradio's own event loop. Once all three finish, their outputs are combined and sent to the Response Agent. The UI shows execution time so you can see the speed benefit versus running agents one after another.
+Peer-to-Peer — agents talk directly to each other through the MessageBus: Research → Analysis → Critic → Response. If the Critic's feedback suggests something is missing or incorrect, it sends the work back to the Research Agent for one correction cycle only, preventing infinite loops.
+How to run the notebook in Google Colab
+Upload this notebook to Google Colab (or open it directly there).
+Run CELL 1 to install gradio and google-genai.
+Run CELL 2 and paste your Gemini API key when prompted (see below).
+Run CELLS 3–11 in order — these define the classes, agents, and the four frameworks. No output is expected from these; they just define code.
+Run CELL 12 to build the Gradio interface.
+Run CELL 13 to launch the app — a public Gradio link will appear.
+How to enter the API key
+Get a FREE key from Google AI Studio: https://aistudio.google.com/app/apikey
+When you run CELL 2, you'll be prompted with Enter your Gemini API Key: Paste it in and press Enter — it is never printed or saved to the notebook.
+Alternatively, set it beforehand as an environment variable or Colab secret named GEMINI_API_KEY, and CELL 2 will detect and reuse it automatically.
+DEMO MODE (no quota / no key required)
+This project never depends on having Gemini API quota to demonstrate the four communication architectures. call_llm() (CELL 5) automatically falls back to a local, simulated response generator whenever the Gemini API is unavailable — missing key, quota exceeded, invalid key, rate limit, or a network error. The very first time this happens, a flag (USE_DEMO_MODE) is set so the app stops retrying the failing API for the rest of the session, and every subsequent response is clearly labeled:
+
+⚠️ DEMO MODE — Gemini API unavailable. Response is simulated for demonstration.
+
+Demo responses aren't one fixed sentence — they're built from the agent's role, the actual request text, and the previous agent's output, so the multi-agent flow still looks and feels real. The Metrics section always shows an Execution Mode ("Gemini API" or "DEMO MODE") so it's obvious which one was used, and the Compare table shows it per framework too.
+
+How to test the system
+Keep the default example request or type your own.
+Pick a framework from the dropdown (e.g. "Centralized") and click 🚀 Run Agents. Watch the Agent Status, Communication Flow, and Communication Log update, and read the Final Response and Metrics.
+Try switching the dropdown to each of the other three frameworks with the same request, and compare the communication logs and flow diagrams.
+Click 📊 Compare All Frameworks to run all four frameworks on the same request back-to-back and see a table of execution time, message count, and LLM call count for each.
+What to demonstrate during the project presentation
+Explain the shared Agent and Message/MessageBus structure and why a common structure makes it easy to plug in different frameworks.
+Run each framework once and point out who talks to whom in the Communication Log — this is the clearest way to show the structural difference between Centralized, Decentralized, Parallel, and P2P.
+Highlight the Parallel framework's execution time versus the others to show the concrete benefit of concurrent agent execution.
+Show the Peer-to-Peer correction cycle by picking a request likely to prompt critic feedback, and point out that the loop runs at most once.
+Use the Compare All Frameworks table as your closing slide, and be clear that it's an experimental demonstration on one sample request, not a rigorous scientific benchmark.
+Mention that the project degrades gracefully: if the API key is missing or out of credits, it automatically switches to a clearly-labeled DEMO MODE instead of failing, so the architecture demo never depends on live credits.
